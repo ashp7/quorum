@@ -1,0 +1,530 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>contractclient: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/ethereum/go-ethereum/NFTCollateral/pkg/contractclient/contractclient.go (15.1%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "bytes"
+        "context"
+        "encoding/hex"
+        "encoding/json"
+        "errors"
+        "flag"
+        "fmt"
+        "github.com/ethereum/go-ethereum/accounts/abi/bind"
+        "github.com/ethereum/go-ethereum/common/compiler"
+        "github.com/ethereum/go-ethereum/core/types"
+        "github.com/ethereum/go-ethereum/crypto"
+        "github.com/ethereum/go-ethereum/ethclient"
+        "math/big"
+        "os/exec"
+        "reflect"
+        "strconv"
+        "strings"
+        "time"
+
+        "github.com/ethereum/go-ethereum/accounts/abi"
+        "github.com/ethereum/go-ethereum/common"
+        log "github.com/sirupsen/logrus"
+)
+
+const (
+        //nodeURL    = "http://localhost:22000" // Replace with your Quorum node URL
+        gasLimit = 700000
+        gasPrice = 0
+        solcVer  = "0.8.23"
+        solcPath = "/usr/local/bin/solc"
+)
+
+var (
+        //privateKey    string = "0x692a322c4eaacafc4ea25c8513270c9d62009f88a7c2866d51b820d5e4bd9696"
+        verboseOutput *bool
+)
+
+// EthClient is an interface that wraps the necessary methods from ethclient.Client.
+type EthClient interface {
+        PendingNonceAt(ctx context.Context, account common.Address) (uint64, error)
+        NetworkID(ctx context.Context) (*big.Int, error)
+        SendTransaction(ctx context.Context, tx *types.Transaction, args bind.PrivateTxArgs) error
+        TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error)
+        CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error)
+}
+
+func displayHelp() <span class="cov0" title="0">{
+        fmt.Println("Usage: myContractBinary [options]")
+        fmt.Println("Options:")
+        fmt.Println("  -nodeURL            URL of the Quorum node. Required.")
+        fmt.Println("  -privateKey         Private key for the transaction. Required.")
+        fmt.Println("  -contractFile       Path to the Solidity contract file. Required.")
+        fmt.Println("  -contractName       Name of the contract. Required.")
+        fmt.Println("  -contractAddress    Address of the deployed contract. Optional.")
+        fmt.Println("  -methodName         Method name to call on the contract. Optional.")
+        fmt.Println("  -methodArgs         Method arguments, comma-separated. Optional.")
+        fmt.Println(" -verbose              Verbose output")
+        fmt.Println("  -help               Display this help message.")
+        fmt.Println("\nExample: ./myContractBinary -nodeURL http://localhost:22000 -privateKey 0x123... -contractFile /path/to/MyContract.sol -contractName MyContract")
+        fmt.Println("Example with method call: ./myContractBinary -nodeURL http://localhost:22000 -privateKey 0x123... -contractAddress 0xContractAddr -methodName myMethod -methodArgs arg1,arg2,arg3")
+}</span>
+
+func main() <span class="cov0" title="0">{
+        // Command-line arguments
+        nodeURL := flag.String("nodeURL", "http://localhost:22000", "URL of the Quorum node")
+        privateKey := flag.String("privateKey", "", "Private key for the transaction")
+        contractFile := flag.String("contractFile", "", "Path to the Solidity contract file")
+        contractName := flag.String("contractName", "", "Name of the contract")
+        contractAddressString := flag.String("contractAddress", "", "Address of the deployed contract (optional)")
+        methodName := flag.String("methodName", "", "Method name to call on the contract (optional)")
+        methodArgs := flag.String("methodArgs", "", "Method arguments, comma-separated (optional)")
+        help := flag.Bool("help", false, "Display help message")
+        verboseOutput = flag.Bool("verbose", false, "Display help message")
+
+        flag.Parse()
+
+        if *help </span><span class="cov0" title="0">{
+                displayHelp()
+                return
+        }</span>
+
+        // Validate required arguments
+        <span class="cov0" title="0">if *nodeURL == "" || *privateKey == "" || *contractFile == "" || *contractName == "" </span><span class="cov0" title="0">{
+                log.Fatal("nodeURL, privateKey, contractFile, and contractName are required")
+        }</span>
+
+        <span class="cov0" title="0">contract, err := CompileContract(*contractFile, "istanbul", *contractName)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to compile contract: %v", err)
+        }</span>
+
+        // Perform actions based on the presence of contractAddress
+        <span class="cov0" title="0">if *contractAddressString == "" </span><span class="cov0" title="0">{
+                // Deploy the contract
+                address, err := DeployContract(contract, *nodeURL, *privateKey, *contractFile, *contractName)
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Fatalf("Failed to deploy contract: %v", err)
+                }</span>
+                <span class="cov0" title="0">fmt.Printf("Contract deployed at address: %s\n", address.Hex())</span>
+        } else<span class="cov0" title="0"> {
+                // Call a method on the contract
+                if *methodName == "" </span><span class="cov0" title="0">{
+                        log.Fatal("methodName is required when contractAddress is provided")
+                }</span>
+
+                // connect to the node
+                <span class="cov0" title="0">client, err := ethclient.Dial(*nodeURL)
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Fatal(err)
+                }</span>
+
+                <span class="cov0" title="0">nonce, err := GetNonce(client, *privateKey) // Replace with the nonce of the account
+                amount := big.NewInt(0)                     // Amount of Ether to send, set to 0 if not sending Ether
+
+                contractAddress := common.HexToAddress(*contractAddressString)
+
+                txn, err := CallContractMethod(client, *privateKey, contract, *methodName, *methodArgs, nonce, contractAddress, amount, gasLimit, big.NewInt(gasPrice))
+                if err != nil </span><span class="cov0" title="0">{
+                        log.Fatalf("Failed to call contract method: %v", err)
+                }</span>
+
+                <span class="cov0" title="0">log.Info("transaction created ", " txn From: ", txn.From(), " txn To: ", txn.To(), " type: ", txn.Type())</span>
+        }
+}
+
+func DeployContract(contract *compiler.Contract, nodeURL string, privateKey string, contractFile string, contractName string) (common.Address, interface{}) <span class="cov0" title="0">{
+
+        if *verboseOutput </span><span class="cov0" title="0">{
+                log.Infof("abi definition is %v", contract.Info.AbiDefinition)
+        }</span>
+
+        <span class="cov0" title="0">abiBytes, err := json.Marshal(contract.Info.AbiDefinition)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to marshal ABI: %v", err)
+        }</span>
+
+        // Filter out custom error types because there was an issue with ERC721 related error while converting to json
+        <span class="cov0" title="0">filteredABIBytes, err := filterABIToRemoveCustomErrors(abiBytes)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to filter ABI: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">parsedABI, err := abi.JSON(bytes.NewReader(filteredABIBytes))
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to parse ABI: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">if *verboseOutput </span><span class="cov0" title="0">{
+                log.Info("methods are", parsedABI.Methods)
+        }</span>
+
+        // Decode the private key from hex string
+        <span class="cov0" title="0">privateKeyBytes, err := hex.DecodeString(privateKey[2:]) // Assuming privateKey is a hex string with "0x" prefix
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Failed to decode hex string of private key: ", err)
+        }</span>
+
+        // Parse the ECDSA private key
+        <span class="cov0" title="0">privKey, err := crypto.ToECDSA(privateKeyBytes)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Failed to parse ECDSA private key: ", err)
+        }</span>
+
+        <span class="cov0" title="0">auth, err := bind.NewKeyedTransactorWithChainID(privKey, big.NewInt(1337))
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+        // Set the gas price and gas limit
+        <span class="cov0" title="0">auth.GasPrice = big.NewInt(gasPrice)
+        auth.GasLimit = gasLimit
+
+        // connect to the node
+        client, err := ethclient.Dial(nodeURL)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal(err)
+        }</span>
+
+        // deploy the contract
+        <span class="cov0" title="0">address, tx, _, err := bind.DeployContract(auth, parsedABI, common.FromHex(contract.Code), client)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to deploy contract: %v", err)
+        }</span>
+        <span class="cov0" title="0">fmt.Printf("Contract deployed at address: %s\n", address.Hex())
+
+        // Wait for the transaction to be mined
+        ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+
+        receipt, err := bind.WaitMined(ctx, client, tx)
+        if err != nil </span><span class="cov0" title="0">{
+                if err == context.DeadlineExceeded </span><span class="cov0" title="0">{
+                        errorStr := "Transaction mining exceeded 30 seconds"
+                        log.Println(errorStr)
+
+                        return address, errors.New(errorStr)
+                }</span>
+        }
+
+        <span class="cov0" title="0">fmt.Printf("Transaction hash: %s\n", receipt.TxHash.Hex())
+        return address, nil</span>
+}
+
+// CompileContract uses solc to compile the Solidity source and
+func CompileContract(solidityFile, evmVersion, contractName string) (*compiler.Contract, error) <span class="cov0" title="0">{
+        //var c CompiledSolidity
+
+        solcArgs := []string{
+                "--combined-json", "bin,bin-runtime,srcmap,srcmap-runtime,abi,userdoc,devdoc,metadata",
+                "--optimize",
+                "--evm-version", evmVersion,
+                "--allow-paths", ".",
+                "--include-path", "../../node_modules",
+                "--base-path", "../../contracts",
+                solidityFile,
+        }
+        solOptionsString := strings.Join(append([]string{solcPath}, solcArgs...), " ")
+        log.Infof("Compiling: %s", solOptionsString)
+        cmd := exec.Command(solcPath, solcArgs...)
+
+        // Compile the solidity
+        var stderr, stdout bytes.Buffer
+        cmd.Stderr = &amp;stderr
+        cmd.Stdout = &amp;stdout
+        if err := cmd.Run(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to compile [%s]: %s", err, stderr.String())
+        }</span>
+
+        <span class="cov0" title="0">compiled, err := compiler.ParseCombinedJSON(stdout.Bytes(), "", solcVer, solcVer, solOptionsString)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to parse solc output: %s", err)
+        }</span>
+
+        // Check we only have one conract and grab the code/info
+        <span class="cov0" title="0">var contract *compiler.Contract
+        contractNames := reflect.ValueOf(compiled).MapKeys()
+        if contractName != "" </span><span class="cov0" title="0">{
+                if _, ok := compiled[contractName]; !ok </span><span class="cov0" title="0">{
+                        return nil, fmt.Errorf("contract %s not found in Solidity file: %s", contractName, contractNames)
+                }</span>
+                <span class="cov0" title="0">contract = compiled[contractName]</span>
+        } else<span class="cov0" title="0"> if len(contractNames) != 1 </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("more than one contract in Solidity file, please set one to call: %s", contractNames)
+        }</span> else<span class="cov0" title="0"> {
+                contractName = contractNames[0].String()
+                contract = compiled[contractName]
+        }</span>
+
+        <span class="cov0" title="0">return contract, nil</span>
+
+}
+
+// CallContractMethod creates, signs, and sends a transaction to call a method on a smart contract
+func CallContractMethod(client EthClient, privateKeyHex string, contract *compiler.Contract, methodName string, args string,
+        nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int) (*types.Transaction, error) <span class="cov0" title="0">{
+
+        ctx := context.Background()
+
+        abiBytes, err := json.Marshal(contract.Info.AbiDefinition)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to marshal ABI: %v", err)
+        }</span>
+
+        // Filter out custom error types
+        <span class="cov0" title="0">filteredABIBytes, err := filterABIToRemoveCustomErrors(abiBytes)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to filter ABI: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">parsedABI, err := abi.JSON(bytes.NewReader(filteredABIBytes))
+        if err != nil </span><span class="cov0" title="0">{
+                log.Errorf("Failed to parse ABI: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">if *verboseOutput </span><span class="cov0" title="0">{
+
+                log.Info("methods are", parsedABI.Methods)
+        }</span>
+
+        <span class="cov0" title="0">method, exists := parsedABI.Methods[methodName]
+        if !exists </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("method '%s' not found in ABI", methodName)
+        }</span>
+
+        // Split the string into individual arguments
+        <span class="cov0" title="0">strArgs := strings.Split(args, ",")
+
+        if len(method.Inputs) != len(strArgs) </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("method '%s' requires %d args but got %d", methodName, len(method.Inputs), len(strArgs))
+        }</span>
+
+        <span class="cov0" title="0">typedArgs, err := GenerateTypedArgs(parsedABI, methodName, strArgs)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to generate typed arguments: %v", err)
+        }</span>
+
+        // Decode the private key from hex string
+        <span class="cov0" title="0">privateKeyBytes, err := hex.DecodeString(privateKeyHex[2:]) // Assuming privateKey is a hex string with "0x" prefix
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("Failed to decode hex string of private key: ", err)
+        }</span>
+
+        // Parse the ECDSA private key
+        <span class="cov0" title="0">privateKey, err := crypto.ToECDSA(privateKeyBytes)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to decode private key: %v", err)
+        }</span>
+
+        // Pack the arguments for the contract call
+        <span class="cov0" title="0">packedArgs, err := parsedABI.Pack(methodName, typedArgs...)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("error packing arguments for method %s: %v", methodName, err)
+        }</span>
+
+        // Create the transaction
+        <span class="cov0" title="0">tx := types.NewTransaction(nonce, to, amount, gasLimit, gasPrice, packedArgs)
+
+        // Sign the transaction with the private key
+        chainID, err := client.NetworkID(context.Background())
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to get network ID: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to sign transaction: %v", err)
+        }</span>
+
+        <span class="cov0" title="0">privateArgs := bind.PrivateTxArgs{}
+
+        // Send the transaction
+        err = client.SendTransaction(ctx, signedTx, privateArgs)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to send transaction: %v", err)
+        }</span>
+
+        // Wait for the transaction to be mined
+        <span class="cov0" title="0">receipt, err := bind.WaitMined(ctx, client, signedTx)
+        if err != nil </span><span class="cov0" title="0">{
+                return signedTx, err
+        }</span>
+
+        <span class="cov0" title="0">log.Info("Transaction receipt ", " Block ", receipt.BlockNumber, " Status ", receipt.Status)
+
+        return signedTx, nil</span>
+}
+
+// GenerateTypedArgs converts string arguments into their corresponding types based on the ABI and method name
+func GenerateTypedArgs(contractAbi abi.ABI, methodName string, strArgs []string) ([]interface{}, error) <span class="cov8" title="1">{
+        method, exists := contractAbi.Methods[methodName]
+        if !exists </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("method '%s' not found in ABI", methodName)
+        }</span>
+
+        <span class="cov8" title="1">if len(method.Inputs) != len(strArgs) </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("method '%s' requires %d args but got %d", methodName, len(method.Inputs), len(strArgs))
+        }</span>
+
+        <span class="cov8" title="1">var typedArgs []interface{}
+        for i, input := range method.Inputs </span><span class="cov8" title="1">{
+                arg := strArgs[i]
+                switch input.Type.T </span>{
+                case abi.StringTy:<span class="cov8" title="1"> // string
+                        typedArgs = append(typedArgs, arg)</span>
+
+                case abi.IntTy, abi.UintTy:<span class="cov8" title="1"> // int, uint
+                        argInt, ok := new(big.Int).SetString(arg, 10)
+                        if !ok </span><span class="cov0" title="0">{
+                                return nil, fmt.Errorf("failed to convert argument %d (%s) to big.Int for type %s", i, arg, input.Type)
+                        }</span>
+                        <span class="cov8" title="1">typedArgs = append(typedArgs, argInt)</span>
+
+                case abi.BoolTy:<span class="cov8" title="1"> // bool
+                        argBool, err := strconv.ParseBool(arg)
+                        if err != nil </span><span class="cov0" title="0">{
+                                return nil, fmt.Errorf("failed to convert argument %d (%s) to bool: %v", i, arg, err)
+                        }</span>
+                        <span class="cov8" title="1">typedArgs = append(typedArgs, argBool)</span>
+
+                case abi.AddressTy:<span class="cov0" title="0"> // address
+                        if !common.IsHexAddress(arg) </span><span class="cov0" title="0">{
+                                return nil, fmt.Errorf("argument %d (%s) is not a valid hex address", i, arg)
+                        }</span>
+                        <span class="cov0" title="0">typedArgs = append(typedArgs, common.HexToAddress(arg))</span>
+
+                default:<span class="cov0" title="0">
+                        // Add support for additional types as needed
+                        return nil, fmt.Errorf("unsupported argument type %s for argument %d", input.Type, i)</span>
+                }
+        }
+
+        <span class="cov8" title="1">return typedArgs, nil</span>
+}
+
+func GetNonce(client EthClient, privateKeyHex string) (uint64, error) <span class="cov8" title="1">{
+
+        privateKeyHex = strings.TrimPrefix(privateKeyHex, "0x")
+        privateKey, err := crypto.HexToECDSA(privateKeyHex)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+        <span class="cov8" title="1">publicAddress := crypto.PubkeyToAddress(privateKey.PublicKey)
+        nonce, err := client.PendingNonceAt(context.Background(), publicAddress)
+        if err != nil </span><span class="cov0" title="0">{
+                return 0, err
+        }</span>
+        <span class="cov8" title="1">return nonce, nil</span>
+}
+
+func filterABIToRemoveCustomErrors(abiJSON []byte) ([]byte, error) <span class="cov8" title="1">{
+        var abiElements []map[string]interface{}
+        err := json.Unmarshal(abiJSON, &amp;abiElements)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, err
+        }</span>
+
+        <span class="cov8" title="1">filteredABIElements := make([]map[string]interface{}, 0)
+        for _, element := range abiElements </span><span class="cov8" title="1">{
+                if typ, ok := element["type"]; ok &amp;&amp; typ != "error" </span><span class="cov8" title="1">{
+                        filteredABIElements = append(filteredABIElements, element)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return json.Marshal(filteredABIElements)</span>
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
