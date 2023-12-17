@@ -27,7 +27,7 @@ import (
 func (c *core) Start() error {
 	// Tests will handle events itself, so we have to make subscribeEvents()
 	// be able to call in test.
-	c.logger.Info("Subscribing to events")
+	c.logger.Info("Subscribing to events", "address", c.Address(), "Round", c.current.Round())
 	c.subscribeEvents()
 	c.logger.Info("Adding myself to the handler wait group")
 	c.handlerWg.Add(1)
@@ -141,7 +141,7 @@ func (c *core) sendEvent(ev interface{}) {
 }
 
 func (c *core) handleMsg(payload []byte) error {
-	logger := c.logger.New()
+	logger := c.logger.New("address", c.address)
 
 	logger.Info("Handling message")
 

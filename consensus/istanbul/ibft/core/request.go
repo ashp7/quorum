@@ -96,7 +96,7 @@ func (c *core) processPendingRequests() {
 			c.logger.Trace("Skip the pending request", "number", r.Proposal.Number(), "hash", r.Proposal.Hash(), "err", err)
 			continue
 		}
-		c.logger.Trace("Post pending request", "number", r.Proposal.Number(), "hash", r.Proposal.Hash())
+		log.Info("Post pending request", "number", r.Proposal.Number(), "hash", r.Proposal.Hash())
 
 		log.Info("Sending event with the proposal")
 		go c.sendEvent(istanbul.RequestEvent{

@@ -208,6 +208,8 @@ func (sb *Backend) Gossip(valSet istanbul.ValidatorSet, code uint64, payload []b
 
 // Commit implements istanbul.Backend.Commit
 func (sb *Backend) Commit(proposal istanbul.Proposal, seals [][]byte, round *big.Int) (err error) {
+	sb.logger.Info("Backend commit", "Block number", sb.currentBlock().Number())
+
 	// Check if the proposal is a valid block
 	block, ok := proposal.(*types.Block)
 	if !ok {
@@ -225,7 +227,8 @@ func (sb *Backend) Commit(proposal istanbul.Proposal, seals [][]byte, round *big
 	// Remove ValidatorSet added to ProposerPolicy registry, if not done, the registry keeps increasing size with each block height
 	sb.config.ProposerPolicy.ClearRegistry()
 
-	sb.logger.Info("Update block's header")
+	sb.logger.Info("Update block's header", "Block number", sb.currentBlock().Number())
+
 	// update block's header
 	block = block.WithSeal(h)
 
@@ -258,7 +261,7 @@ func (sb *Backend) EventMux() *event.TypeMux {
 // Verify implements istanbul.Backend.Verify
 func (sb *Backend) Verify(proposal istanbul.Proposal) (time.Duration, error) {
 
-	sb.logger.Info("Checking for proposal is type of block")
+	sb.logger.Info("Checking for proposal is type of block", "block number", sb.currentBlock().Number())
 	// Check if the proposal is a valid block
 	block, ok := proposal.(*types.Block)
 	if !ok {
@@ -267,7 +270,7 @@ func (sb *Backend) Verify(proposal istanbul.Proposal) (time.Duration, error) {
 	}
 
 
-	sb.logger.Info("Checking for bad proposal")
+	sb.logger.Info("Checking for bad proposal", "block number", sb.currentBlock().Number())
 	// check bad block
 	if sb.HasBadProposal(block.Hash()) {
 		sb.logger.Warn("BFT: bad block proposal", "proposal", proposal)
@@ -275,7 +278,7 @@ func (sb *Backend) Verify(proposal istanbul.Proposal) (time.Duration, error) {
 	}
 
 	header := block.Header()
-	sb.logger.Info("Proposal authorization snapshot")
+	sb.logger.Info("Proposal authorization snapshot","block number", sb.currentBlock().Number())
 	snap, err := sb.snapshot(sb.chain, header.Number.Uint64()-1, header.ParentHash, nil)
 	if err != nil {
 		return 0, err

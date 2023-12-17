@@ -26,7 +26,9 @@ import (
 )
 
 func (c *core) sendPreprepare(request *istanbul.Request) {
-	logger := c.logger.New("state", c.state)
+	logger := c.logger.New("state", c.state, "address", c.Address(), "round", c.current.Round().String(), "request proposal", request.Proposal.Number())
+
+
 	// If I'm the proposer and I have the same sequence with the proposal
 	if c.current.Sequence().Cmp(request.Proposal.Number()) == 0 && c.IsProposer() {
 		logger.Info("I am the proposer and I have the same sequence number as the request")
@@ -43,12 +45,13 @@ func (c *core) sendPreprepare(request *istanbul.Request) {
 			Code: ibfttypes.MsgPreprepare,
 			Msg:  preprepare,
 		})
-		logger.Info("Broadcasting message", "proposal number", request.Proposal.Number())
+		logger.Info("Broadcasting message")
 	}
 }
 
 func (c *core) handlePreprepare(msg *ibfttypes.Message, src istanbul.Validator) error {
-	logger := c.logger.New("from", src, "state", c.state)
+	logger := c.logger.New("from", src,"state", c.state, "address", c.Address(), "round", c.current.Round().String())
+
 
 	logger.Info("Decoding prepare message")
 	// Decode PRE-PREPARE
@@ -113,7 +116,7 @@ func (c *core) handlePreprepare(msg *ibfttypes.Message, src istanbul.Validator) 
 		if c.current.IsHashLocked() {
 			if preprepare.Proposal.Hash() == c.current.GetLockedHash() {
 				// Broadcast COMMIT and enters Prepared state directly
-				c.logger.Info("Locked hash Accepting pre-prepare message, setting state to prepared and sending commit directly")
+				logger.Info("Locked hash Accepting pre-prepare message, setting state to prepared and sending commit directly")
 				c.acceptPreprepare(preprepare)
 				c.setState(ibfttypes.StatePrepared)
 				c.sendCommit()
@@ -125,7 +128,7 @@ func (c *core) handlePreprepare(msg *ibfttypes.Message, src istanbul.Validator) 
 			// Either
 			//   1. the locked proposal and the received proposal match
 			//   2. we have no locked proposal
-			c.logger.Info("Accepting pre-prepare message, setting state to preprepared and sending commit directly")
+			logger.Info("Accepting pre-prepare message, setting state to preprepared and sending commit directly")
 			c.acceptPreprepare(preprepare)
 			c.setState(ibfttypes.StatePreprepared)
 			c.sendPrepare()

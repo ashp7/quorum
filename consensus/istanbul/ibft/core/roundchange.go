@@ -29,7 +29,7 @@ import (
 // sendNextRoundChange sends the ROUND CHANGE message with current round + 1
 func (c *core) sendNextRoundChange() {
 	cv := c.currentView()
-	c.logger.Info("Sending round change")
+	c.logger.Info("Sending round change", "address", c.Address(), "current round", c.current.Round().String())
 	c.sendRoundChange(new(big.Int).Add(cv.Round, common.Big1))
 }
 
@@ -63,7 +63,7 @@ func (c *core) sendRoundChange(round *big.Int) {
 	}
 
 
-	c.logger.Info("Broadcasting round change")
+	c.logger.Info("Broadcasting round change", "address", c.Address(), "current round", c.current.Round().String())
 	c.broadcast(&ibfttypes.Message{
 		Code: ibfttypes.MsgRoundChange,
 		Msg:  payload,

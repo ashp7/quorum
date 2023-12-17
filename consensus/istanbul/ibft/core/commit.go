@@ -27,7 +27,7 @@ import (
 
 func (c *core) sendCommit() {
 	sub := c.current.Subject()
-	c.logger.Info("Broadcasting commit")
+	c.logger.Info("Broadcasting commit", "address", c.Address(), "Round", c.current.Round())
 	c.broadcastCommit(sub)
 }
 
@@ -56,26 +56,27 @@ func (c *core) broadcastCommit(sub *istanbul.Subject) {
 func (c *core) handleCommit(msg *ibfttypes.Message, src istanbul.Validator) error {
 	// Decode COMMIT message
 	var commit *istanbul.Subject
-	c.logger.Info("Decoding commit")
+
+	c.logger.Info("Decoding commit","address", c.Address(), "Round", c.current.Round())
 	err := msg.Decode(&commit)
 	if err != nil {
 		return istanbulcommon.ErrFailedDecodeCommit
 	}
 
 
-	c.logger.Info("Checking message")
+	c.logger.Info("Checking message", "address", c.Address(), "Round", c.current.Round())
 	if err := c.checkMessage(ibfttypes.MsgCommit, commit.View); err != nil {
 		return err
 	}
 
 
-	c.logger.Info("Verifying commit")
+	c.logger.Info("Verifying commit", "address", c.Address(), "Round", c.current.Round())
 	if err := c.verifyCommit(commit, src); err != nil {
 		return err
 	}
 
 
-	c.logger.Info("Accepting commit")
+	c.logger.Info("Accepting commit", "address", c.Address(), "Round", c.current.Round())
 	c.acceptCommit(msg, src)
 
 	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
@@ -85,7 +86,7 @@ func (c *core) handleCommit(msg *ibfttypes.Message, src istanbul.Validator) erro
 	if c.current.Commits.Size() >= c.QuorumSize() && c.state.Cmp(ibfttypes.StateCommitted) < 0 {
 		// Still need to call LockHash here since state can skip Prepared state and jump directly to the Committed state.
 		c.current.LockHash()
-		c.logger.Info("commiting the proposal")
+		c.logger.Info("commiting the proposal","address", c.Address(), "Round", c.current.Round())
 		c.commit()
 	}
 
