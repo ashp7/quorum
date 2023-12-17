@@ -10,8 +10,9 @@ replace github.com/coreos/etcd => github.com/Consensys/etcd v3.3.13-quorum197+in
 require (
 	github.com/Azure/azure-storage-blob-go v0.7.0
 	github.com/Azure/go-autorest/autorest/adal v0.9.21 // indirect
-	github.com/BurntSushi/toml v0.3.1
+	github.com/BurntSushi/toml v1.2.1
 	github.com/ConsenSys/quorum-qlight-token-manager-plugin-sdk-go v0.0.0-20220427130631-ecd75caa6e73
+	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/VictoriaMetrics/fastcache v1.5.7
 	github.com/aws/aws-sdk-go-v2 v1.2.0
@@ -22,6 +23,7 @@ require (
 	github.com/cespare/cp v0.1.0
 	github.com/cloudflare/cloudflare-go v0.14.0
 	github.com/consensys/gnark-crypto v0.4.1-0.20210426202927-39ac3d4b3f1f
+	github.com/containerd/containerd v1.7.11 // indirect
 	github.com/coreos/etcd v3.3.20+incompatible
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
@@ -29,7 +31,10 @@ require (
 	github.com/davecgh/go-spew v1.1.1
 	github.com/deckarep/golang-set v0.0.0-20180603214616-504e848d77ea
 	github.com/dlclark/regexp2 v1.7.0 // indirect
-	github.com/docker/docker v20.10.12+incompatible
+	github.com/docker/distribution v2.8.3+incompatible // indirect
+	github.com/docker/docker v23.0.3+incompatible
+	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dop251/goja v0.0.0-20200721192441-a695b0cdd498
 	github.com/eapache/channels v1.1.0
 	github.com/eapache/queue v1.1.0 // indirect
@@ -41,10 +46,10 @@ require (
 	github.com/go-stack/stack v1.8.1
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0
-	github.com/golang/protobuf v1.5.2
-	github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3
-	github.com/google/gofuzz v1.1.1-0.20200604201612-c04b05f3adfa
-	github.com/google/uuid v1.1.5
+	github.com/golang/protobuf v1.5.3
+	github.com/golang/snappy v0.0.4
+	github.com/google/gofuzz v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/graph-gophers/graphql-go v1.3.0
 	github.com/hashicorp/go-hclog v1.1.0
@@ -59,11 +64,11 @@ require (
 	github.com/jpmorganchase/quorum-account-plugin-sdk-go v0.0.0-20200714175524-662195b38a5e
 	github.com/jpmorganchase/quorum-hello-world-plugin-sdk-go v0.0.0-20200210211148-57f99f69eeb3
 	github.com/jpmorganchase/quorum-security-plugin-sdk-go v0.0.0-20200714173835-22a319bb78ce
-	github.com/julienschmidt/httprouter v1.2.0
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/karalabe/usb v0.0.2
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.4
-	github.com/mattn/go-isatty v0.0.14
+	github.com/mattn/go-isatty v0.0.17
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect
 	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/naoina/toml v0.1.2-0.20170918210437-9fafd6967416
@@ -77,18 +82,19 @@ require (
 	github.com/rs/cors v1.7.0
 	github.com/shirou/gopsutil v2.20.5+incompatible
 	github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.4
 	github.com/syndtr/goleveldb v1.0.1-0.20210305035536-64b5b1c73954
 	github.com/tv42/httpunix v0.0.0-20191220191345-2ba4b9c3382c
 	github.com/tyler-smith/go-bip39 v1.0.1-0.20181017060643-dbb3b84ba2ef
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
-	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
-	golang.org/x/text v0.3.7
-	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324
-	google.golang.org/grpc v1.46.0
+	golang.org/x/crypto v0.16.0
+	golang.org/x/sync v0.3.0
+	golang.org/x/sys v0.15.0
+	golang.org/x/term v0.15.0
+	golang.org/x/text v0.14.0
+	golang.org/x/time v0.3.0
+	google.golang.org/grpc v1.58.3
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
 	gopkg.in/karalabe/cookiejar.v2 v2.0.0-20150724131613-8dcd6a7f4951
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
@@ -96,5 +102,4 @@ require (
 	gopkg.in/oleiade/lane.v1 v1.0.0
 	gopkg.in/urfave/cli.v1 v1.20.0
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gotest.tools/v3 v3.1.0 // indirect
 )
