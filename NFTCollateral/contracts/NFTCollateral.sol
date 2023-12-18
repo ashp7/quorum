@@ -2,6 +2,8 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 
 contract NFTCollateralLoan {
 
@@ -67,9 +69,9 @@ contract NFTCollateralLoan {
 
         proposals[nextProposalId++] = newProposal; // any added benefit to using a random id ?
     }
-  
 
-    // acceptProposal accepts a proposal for a loan and transfer money  
+
+    // acceptProposal accepts a proposal for a loan and transfer money
     function acceptProposal(uint256 _proposalId) external payable {
 
         LoanProposal storage proposal = proposals[_proposalId]; // needs to be storage for efficienct since we are referring to a stored value in block chain
@@ -104,16 +106,29 @@ contract NFTCollateralLoan {
         return interest;
     }
 
+    // This is for testing purposes only
+    function testCalculateRepayment(uint256 _proposalId) public view returns (uint256) {
+        LoanProposal storage proposal = proposals[_proposalId];
+        return proposal.loanAmount + calculateInterest(proposal);
+    }
+
     // repayLoan is payment of money from borrower to lender
     function repayLoan(uint256 _proposalId) external payable {
 
         LoanProposal storage  proposal = proposals[_proposalId];
 
         uint256 repaymentAmount = proposal.loanAmount +  calculateInterest(proposal) ;
-  
-        // simple case where we require the borrower to pay off one time 
-        require(msg.value >= repaymentAmount, "Not enough funds");
-        require(proposal.isAccepted && !proposal.isPaidBack, "Loan not accepted or already paid");
+
+        require(msg.value >= repaymentAmount,
+            string(abi.encodePacked(
+                "Insufficient funds. Sent: ",
+                Strings.toString(msg.value),
+                ", Required: ",
+                Strings.toString(repaymentAmount)
+            ))
+        );
+
+    require(proposal.isAccepted && !proposal.isPaidBack, "Loan not accepted or already paid");
         
         // this is where we do the repayment to the lender 
         payable(proposal.lender).transfer(msg.value);
@@ -147,14 +162,14 @@ contract NFTCollateralLoan {
         // Check if its still due 
         require(!proposal.isPaidBack, "Loan is already paid back");
 
-        if (block.timestamp > proposal.dueDate) 
+        if (block.timestamp < proposal.dueDate)
             return;
         
         // Transfer NFT to the lender
         IERC721 nftContract = IERC721(proposal.nftContractAddress);
         nftContract.transferFrom(address(this), proposal.lender, proposal.nftTokenId);
 
-        proposal.isPaidBack = true; //
+        proposal.isPaidBack = true;
 
         emit LoanDateExpired(_proposalId);
     }
