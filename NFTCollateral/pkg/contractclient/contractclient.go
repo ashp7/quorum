@@ -64,7 +64,6 @@ func displayHelp() {
 
 func main() {
 
-
 	// Command-line arguments
 	nodeURL := flag.String("nodeURL", "http://localhost:22000", "URL of the Quorum node")
 	privateKey := flag.String("privateKey", "", "Private key for the transaction")
@@ -90,8 +89,6 @@ func main() {
 		return
 	}
 
-
-
 	// Validate required arguments
 	if *nodeURL == "" || *privateKey == "" || *contractFile == "" || *contractName == "" {
 		log.Fatal("nodeURL, privateKey, contractFile, and contractName are required")
@@ -106,7 +103,7 @@ func main() {
 	// Perform actions based on the presence of contractAddress
 	if *contractAddressString == "" {
 		// Deploy the contract
-		address, err := DeployContract(contract, *nodeURL, *privateKey, *contractFile, *contractName)
+		address, err := DeployContract(contract, *nodeURL, *privateKey)
 		if err != nil {
 			log.Fatalf("Failed to deploy contract: %v", err)
 		}
@@ -143,7 +140,7 @@ func main() {
 	}
 }
 
-func DeployContract(contract *compiler.Contract, nodeURL string, privateKey string, contractFile string, contractName string) (common.Address, interface{}) {
+func DeployContract(contract *compiler.Contract, nodeURL string, privateKey string) (common.Address, interface{}) {
 
 	if *verboseOutput {
 		log.Infof("abi definition is %v", contract.Info.AbiDefinition)
@@ -182,19 +179,25 @@ func DeployContract(contract *compiler.Contract, nodeURL string, privateKey stri
 		log.Fatal("Failed to parse ECDSA private key: ", err)
 	}
 
-	auth, err := bind.NewKeyedTransactorWithChainID(privKey, big.NewInt(1337))
+	// connect to the node
+	client, err := ethclient.Dial(nodeURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Sign the transaction with the private key
+	chainID, err := client.NetworkID(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	auth, err := bind.NewKeyedTransactorWithChainID(privKey, chainID)
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Set the gas price and gas limit
 	auth.GasPrice = big.NewInt(gasPrice)
 	auth.GasLimit = gasLimit
-
-	// connect to the node
-	client, err := ethclient.Dial(nodeURL)
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	// deploy the contract
 	address, tx, _, err := bind.DeployContract(auth, parsedABI, common.FromHex(contract.Code), client)
