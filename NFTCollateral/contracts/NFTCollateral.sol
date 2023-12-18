@@ -46,8 +46,8 @@ contract NFTCollateralLoan {
     function submitProposal(address _nftContractAddress, uint256 _nftTokenId, uint256 _loanAmount, uint256 _interestRate, uint256 _duration) external {
         IERC721 nftContract = IERC721(_nftContractAddress);
 
-        require(nftContract.ownerOf(_nftTokenId) == msg.sender, "Not the NFT owner");
-        nftContract.transferFrom(msg.sender, address(this), _nftTokenId);
+       require(nftContract.ownerOf(_nftTokenId) == msg.sender, "Not the NFT owner");
+       nftContract.transferFrom(msg.sender, address(this), _nftTokenId);
 
         LoanProposal memory newProposal = LoanProposal({
             borrower: msg.sender,

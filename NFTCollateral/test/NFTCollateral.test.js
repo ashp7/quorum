@@ -2,54 +2,59 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 describe("NFTCollateralLoan", function () {
-    let NFTCollateralLoan, nftCollateralLoan, MockNFT, mockNFT;
-    let owner, addr1;
+    let nftCollateral;
+    let nftToken;
+    let borrower;
+    let col_accounts;
+    let nft_owner;
+    let col_owner;
 
     beforeEach(async function () {
+        // Deploy NFTToken
+        const NFTToken = await ethers.getContractFactory("NFTToken");
+        [nft_owner, nft_addr1, nft_addr2, ...nft_accounts] = await ethers.getSigners();
+        nftToken = await NFTToken.deploy();
+        await nftToken.waitForDeployment();
 
-        [owner, addr1] = await ethers.getSigners();
+        // Deploy NFTCollateralLoan
+        const NFTCollateral = await ethers.getContractFactory("NFTCollateralLoan");
+        [col_owner, col_addr1, col_addr2, ...col_accounts] = await ethers.getSigners();
+        nftCollateral = await NFTCollateral.deploy();
+        await nftCollateral.waitForDeployment();
 
-        MockNFT = await ethers.getContractFactory("MockNFT");
-        NFTCollateralLoan = await ethers.getContractFactory("NFTCollateralLoan");
-
-        tokenId = 100;
-        mockNFT = await MockNFT.deploy();
-        await mockNFT.connect(owner).mint(addr1.address, tokenId);
-        await mockNFT.mint(addr1.address,BigInt(1)); // Mint an NFT to addr1
-        console.log("addr1 address:", addr1)
-
-        nftCollateralLoan = await NFTCollateralLoan.deploy();
-
-        console.log("MockNFT address:", mockNFT.target);
-        console.log("NFTCollateralLoan address:", nftCollateralLoan.target);
-
+        // Set up a borrower and mint an NFT to them
+        borrower = col_accounts[0];
+        await nftToken.connect(nft_owner).mint(borrower.address, 1);
     });
 
-    describe("submitProposal", function () {
-        it("should allow a user to submit a loan proposal", async function () {
-            // Transfer the NFT to the contract from addr1
-            console.log("first connect");
-          await mockNFT.connect(addr1.target).approve(nftCollateralLoan.target, tokenId);
+    it("should submit a proposal", async function () {
+        const nftContractAddress = nftToken.address; // Use the contract address of the NFTToken
+        const nftTokenId = 1;
+        const loanAmount = 100; // Assuming loan amount is in ether
+        const interestRate = 10;
+        const duration = 30 * 24 * 60 * 60; // 30 days in seconds
 
-            console.log("submit one proposal");
-            // `addr1` submits a proposal
-            loanAmount = 10000;
-            interestRate = 10
-            duration = 36000
-            await nftCollateralLoan.connect(addr1.target).submitProposal(mockNFT.target, tokenId, loanAmount, interestRate, duration);
+        // Approve the NFTCollateral contract to transfer the NFT on behalf of the borrower
+        await nftToken.connect(borrower).approve(nftCollateral.address, nftTokenId);
 
-            // Retrieve the first proposal
-            const proposalIndex = 0; // Assuming this is the first proposal
-            const proposal = await nftCollateralLoan.proposals(proposalIndex);
+        // Submit the proposal
+        await expect(nftCollateral.connect(borrower).submitProposal(
+            nftContractAddress,
+            nftTokenId,
+            loanAmount,
+            interestRate,
+            duration,
+        )).to.emit(nftCollateral, "ProposalSubmitted"); // Check for ProposalSubmitted event
 
-            expect(proposal.borrower).to.equal(addr1.address);
-            expect(proposal.nftContractAddress).to.equal(mockNFT.address);
-            expect(proposal.nftTokenId).to.equal(tokenId);
-            expect(proposal.loanAmount).to.equal(loanAmount);
-            // Additional assertions as necessary
-        });
+        // Retrieve the proposal and verify its properties
+        const proposal = await nftCollateral.proposals(0);
+        expect(proposal.borrower).to.equal(borrower.address);
+        expect(proposal.nftContractAddress).to.equal(nftContractAddress);
+        expect(proposal.nftTokenId).to.equal(nftTokenId);
+        expect(proposal.loanAmount).to.equal(loanAmount);
+        expect(proposal.interestRate).to.equal(interestRate);
+        expect(proposal.duration).to.equal(duration);
+        expect(proposal.isAccepted).to.be.false;
+        expect(proposal.isPaidBack).to.be.false;
     });
-
-    // Additional tests can be added here
 });
-
