@@ -55,7 +55,7 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">github.com/ethereum/go-ethereum/NFTCollateral/pkg/contractclient/contractclient.go (15.1%)</option>
+				<option value="file0">github.com/ethereum/go-ethereum/NFTCollateral/pkg/contractclient/contractclient.go (13.7%)</option>
 				
 				</select>
 			</div>
@@ -142,6 +142,7 @@ func main() <span class="cov0" title="0">{
         contractName := flag.String("contractName", "", "Name of the contract")
         contractAddressString := flag.String("contractAddress", "", "Address of the deployed contract (optional)")
         methodName := flag.String("methodName", "", "Method name to call on the contract (optional)")
+        eventName := flag.String("eventName", "", "Event name to view logs(optional)")
         methodArgs := flag.String("methodArgs", "", "Method arguments, comma-separated (optional)")
         help := flag.Bool("help", false, "Display help message")
         verboseOutput = flag.Bool("verbose", false, "Display help message")
@@ -184,11 +185,9 @@ func main() <span class="cov0" title="0">{
                 }</span>
 
                 <span class="cov0" title="0">nonce, err := GetNonce(client, *privateKey) // Replace with the nonce of the account
-                amount := big.NewInt(0)                     // Amount of Ether to send, set to 0 if not sending Ether
-
                 contractAddress := common.HexToAddress(*contractAddressString)
 
-                txn, err := CallContractMethod(client, *privateKey, contract, *methodName, *methodArgs, nonce, contractAddress, amount, gasLimit, big.NewInt(gasPrice))
+                txn, err := CallContractMethod(client, *privateKey, contract, *methodName, *methodArgs, nonce, contractAddress, *eventName)
                 if err != nil </span><span class="cov0" title="0">{
                         log.Fatalf("Failed to call contract method: %v", err)
                 }</span>
@@ -220,7 +219,8 @@ func DeployContract(contract *compiler.Contract, nodeURL string, privateKey stri
         }</span>
 
         <span class="cov0" title="0">if *verboseOutput </span><span class="cov0" title="0">{
-                log.Info("methods are", parsedABI.Methods)
+                log.Info("methods are ", parsedABI.Methods)
+                log.Info("events are ", parsedABI.Events)
         }</span>
 
         // Decode the private key from hex string
@@ -324,8 +324,14 @@ func CompileContract(solidityFile, evmVersion, contractName string) (*compiler.C
 }
 
 // CallContractMethod creates, signs, and sends a transaction to call a method on a smart contract
-func CallContractMethod(client EthClient, privateKeyHex string, contract *compiler.Contract, methodName string, args string,
-        nonce uint64, to common.Address, amount *big.Int, gasLimit uint64, gasPrice *big.Int) (*types.Transaction, error) <span class="cov0" title="0">{
+func CallContractMethod(client EthClient,
+        privateKeyHex string,
+        contract *compiler.Contract,
+        methodName string, args string,
+        nonce uint64,
+        to common.Address,
+        eventName string,
+) (*types.Transaction, error) <span class="cov0" title="0">{
 
         ctx := context.Background()
 
@@ -346,8 +352,8 @@ func CallContractMethod(client EthClient, privateKeyHex string, contract *compil
         }</span>
 
         <span class="cov0" title="0">if *verboseOutput </span><span class="cov0" title="0">{
-
                 log.Info("methods are", parsedABI.Methods)
+                log.Info("events are ", parsedABI.Events)
         }</span>
 
         <span class="cov0" title="0">method, exists := parsedABI.Methods[methodName]
@@ -385,8 +391,9 @@ func CallContractMethod(client EthClient, privateKeyHex string, contract *compil
                 return nil, fmt.Errorf("error packing arguments for method %s: %v", methodName, err)
         }</span>
 
+        <span class="cov0" title="0">amount := big.NewInt(0)
         // Create the transaction
-        <span class="cov0" title="0">tx := types.NewTransaction(nonce, to, amount, gasLimit, gasPrice, packedArgs)
+        tx := types.NewTransaction(nonce, to, amount, gasLimit, big.NewInt(gasPrice), packedArgs)
 
         // Sign the transaction with the private key
         chainID, err := client.NetworkID(context.Background())
@@ -414,8 +421,38 @@ func CallContractMethod(client EthClient, privateKeyHex string, contract *compil
         }</span>
 
         <span class="cov0" title="0">log.Info("Transaction receipt ", " Block ", receipt.BlockNumber, " Status ", receipt.Status)
+        if eventName != "" </span><span class="cov0" title="0">{
+                for key, _ := range parsedABI.Events </span><span class="cov0" title="0">{
+                        fmt.Printf("Event key is %v\n", key)
+                }</span>
+                <span class="cov0" title="0">fmt.Printf("eventName %s", eventName)
+                if event, ok := parsedABI.Events[eventName]; ok </span><span class="cov0" title="0">{
+                        fmt.Println("found matching event")
+                        for _, vLog := range receipt.Logs </span><span class="cov0" title="0">{
+                                fmt.Printf("receipt log %v", vLog)
+                                if len(vLog.Topics) &gt; 0 &amp;&amp; vLog.Topics[0].Hex() == event.ID.Hex() </span><span class="cov0" title="0">{
+                                        processEvent(event, vLog.Data)
+                                }</span>
+                        }
+                }
+        }
 
-        return signedTx, nil</span>
+        <span class="cov0" title="0">return signedTx, nil</span>
+}
+
+func processEvent(event abi.Event, data []byte) <span class="cov0" title="0">{
+
+        results, err := event.Inputs.Unpack(data)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Errorf("Failed to parse event logs Error: %s", err.Error())
+                return
+        }</span>
+
+        <span class="cov0" title="0">eventParams := make(map[string]interface{})
+        for i, input := range event.Inputs </span><span class="cov0" title="0">{
+                fmt.Printf("Parameter %s: Value %v\n", eventParams[input.Name], results[i])
+        }</span>
+
 }
 
 // GenerateTypedArgs converts string arguments into their corresponding types based on the ABI and method name

@@ -24,5 +24,9 @@ contract NFTToken is ERC721URIStorage {
 
         return tokenId;
     }
-}
 
+    function getToken(uint256 tokenId) public view returns (address owner, string memory uri) {
+	owner = ownerOf(tokenId);
+	uri = tokenURI(tokenId);
+    }
+}
