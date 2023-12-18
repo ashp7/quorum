@@ -71,7 +71,7 @@ func (c *core) sendRoundChange(round *big.Int) {
 }
 
 func (c *core) handleRoundChange(msg *ibfttypes.Message, src istanbul.Validator) error {
-	logger := c.logger.New("state", c.state, "from", src.Address().Hex())
+	logger := c.logger.New("state", c.state, "from", src.Address().Hex(), "message", msg.String())
 
 	// Decode ROUND CHANGE message
 	var rc *istanbul.Subject

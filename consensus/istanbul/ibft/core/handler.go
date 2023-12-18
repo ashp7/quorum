@@ -27,7 +27,7 @@ import (
 func (c *core) Start() error {
 	// Tests will handle events itself, so we have to make subscribeEvents()
 	// be able to call in test.
-	c.logger.Info("Subscribing to events", "address", c.Address(), "Round", c.current.Round())
+	c.logger.Info("Subscribing to events", "address", c.Address())
 	c.subscribeEvents()
 	c.logger.Info("Adding myself to the handler wait group")
 	c.handlerWg.Add(1)
@@ -86,14 +86,16 @@ func (c *core) handleEvents() {
 	for {
 		select {
 		case event, ok := <-c.events.Chan():
-			c.logger.Info("Received event ", "event", event)
 			if !ok {
 				return
 			}
 
+			c.logger.Info("Received event ", "event at", event.Time )
+
 			// A real event arrived, process interesting content
 			switch ev := event.Data.(type) {
 			case istanbul.RequestEvent:
+				c.logger.Info("Received Istanbul Request Event", "Proposal number", ev.Proposal.Number())
 
 				r := &istanbul.Request{
 					Proposal: ev.Proposal,
@@ -103,6 +105,8 @@ func (c *core) handleEvents() {
 					c.storeRequestMsg(r)
 				}
 			case istanbul.MessageEvent:
+
+				c.logger.Info("Received Istanbul Message Event")
 
 				if err := c.handleMsg(ev.Payload); err == nil {
 					c.backend.Gossip(c.valSet, ev.Code, ev.Payload)
@@ -129,6 +133,7 @@ func (c *core) handleEvents() {
 			}
 			switch event.Data.(type) {
 			case istanbul.FinalCommittedEvent:
+				c.logger.Info("Handling final committed")
 				c.handleFinalCommitted()
 			}
 		}

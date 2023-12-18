@@ -40,7 +40,9 @@ func (c *core) sendCommitForOldBlock(view *istanbul.View, digest common.Hash) {
 }
 
 func (c *core) broadcastCommit(sub *istanbul.Subject) {
-	logger := c.logger.New("state", c.state)
+	logger := c.logger.New("state", c.state, "subject", sub.String())
+
+	logger.Info("Broadccasting commit")
 
 	encodedSubject, err := ibfttypes.Encode(sub)
 	if err != nil {
@@ -57,26 +59,28 @@ func (c *core) handleCommit(msg *ibfttypes.Message, src istanbul.Validator) erro
 	// Decode COMMIT message
 	var commit *istanbul.Subject
 
-	c.logger.Info("Decoding commit","address", c.Address(), "Round", c.current.Round())
+	logger := c.logger.New("address", c.Address(), "Round", c.current.Round(), "message", msg.String())
+
+    logger.Info("Decoding commit",)
 	err := msg.Decode(&commit)
 	if err != nil {
 		return istanbulcommon.ErrFailedDecodeCommit
 	}
 
 
-	c.logger.Info("Checking message", "address", c.Address(), "Round", c.current.Round())
+	logger.Info("Checking message")
 	if err := c.checkMessage(ibfttypes.MsgCommit, commit.View); err != nil {
 		return err
 	}
 
 
-	c.logger.Info("Verifying commit", "address", c.Address(), "Round", c.current.Round())
+	logger.Info("Verifying commit")
 	if err := c.verifyCommit(commit, src); err != nil {
 		return err
 	}
 
 
-	c.logger.Info("Accepting commit", "address", c.Address(), "Round", c.current.Round())
+	logger.Info("Accepting commit", "address", c.Address(), "Round", c.current.Round())
 	c.acceptCommit(msg, src)
 
 	// Commit the proposal once we have enough COMMIT messages and we are not in the Committed state.
@@ -95,7 +99,7 @@ func (c *core) handleCommit(msg *ibfttypes.Message, src istanbul.Validator) erro
 
 // verifyCommit verifies if the received COMMIT message is equivalent to our subject
 func (c *core) verifyCommit(commit *istanbul.Subject, src istanbul.Validator) error {
-	logger := c.logger.New("from", src, "state", c.state)
+	logger := c.logger.New("from", src, "state", c.state, "subject", commit.String())
 
 	sub := c.current.Subject()
 	if !reflect.DeepEqual(commit, sub) {
@@ -107,7 +111,7 @@ func (c *core) verifyCommit(commit *istanbul.Subject, src istanbul.Validator) er
 }
 
 func (c *core) acceptCommit(msg *ibfttypes.Message, src istanbul.Validator) error {
-	logger := c.logger.New("from", src, "state", c.state)
+	logger := c.logger.New("from", src, "state", c.state, "message", msg.String())
 
 	// Add the COMMIT message to current round state
 	if err := c.current.Commits.Add(msg); err != nil {

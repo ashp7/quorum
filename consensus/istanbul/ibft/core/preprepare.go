@@ -26,7 +26,7 @@ import (
 )
 
 func (c *core) sendPreprepare(request *istanbul.Request) {
-	logger := c.logger.New("state", c.state, "address", c.Address(), "round", c.current.Round().String(), "request proposal", request.Proposal.Number())
+	logger := c.logger.New("state", c.state, "address", c.Address(), "round", c.current.Round().String(), "request proposal", request.Proposal.Number(), "method", "sendPreprepare")
 
 
 	// If I'm the proposer and I have the same sequence with the proposal
@@ -45,12 +45,12 @@ func (c *core) sendPreprepare(request *istanbul.Request) {
 			Code: ibfttypes.MsgPreprepare,
 			Msg:  preprepare,
 		})
-		logger.Info("Broadcasting message")
+		logger.Info("Broadcasting preprepare message")
 	}
 }
 
 func (c *core) handlePreprepare(msg *ibfttypes.Message, src istanbul.Validator) error {
-	logger := c.logger.New("from", src,"state", c.state, "address", c.Address(), "round", c.current.Round().String())
+	logger := c.logger.New("from", src,"state", c.state, "address", c.Address(), "round", c.current.Round().String(), "message", msg.String())
 
 
 	logger.Info("Decoding prepare message")
@@ -90,7 +90,7 @@ func (c *core) handlePreprepare(msg *ibfttypes.Message, src istanbul.Validator) 
 
 
 
-	logger.Info("Checking the proposal")
+	logger.Info("Checking the proposal", "proposal number", preprepare.Proposal.Number())
 	// Verify the proposal we received
 	if duration, err := c.backend.Verify(preprepare.Proposal); err != nil {
 		// if it's a future block, we will handle it again after the duration
@@ -128,7 +128,7 @@ func (c *core) handlePreprepare(msg *ibfttypes.Message, src istanbul.Validator) 
 			// Either
 			//   1. the locked proposal and the received proposal match
 			//   2. we have no locked proposal
-			logger.Info("Accepting pre-prepare message, setting state to preprepared and sending commit directly")
+			logger.Info("Accepting pre-prepare message, setting state to preprepared and sending prepare")
 			c.acceptPreprepare(preprepare)
 			c.setState(ibfttypes.StatePreprepared)
 			c.sendPrepare()
