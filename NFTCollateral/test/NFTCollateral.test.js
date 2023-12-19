@@ -137,4 +137,105 @@ describe("NFTCollateralLoan", function () {
         expect(proposal.isPaidBack).to.be.true;
     });
 
+    it("should allow a borrower to retract a proposal", async function () {
+        const nftTokenId = 1;
+        const loanAmount = ethers.parseUnits("100", "ether");
+        const interestRate = 10; // 10%
+        const duration = 30 * 24 * 60 * 60; // 30 days
+
+        // Submit a proposal
+        await nftToken.connect(borrower).approve(nftCollateralAddress, nftTokenId);
+        await nftCollateral.connect(borrower).submitProposal(
+            nftContractAddress,
+            nftTokenId,
+            loanAmount,
+            interestRate,
+            duration
+        );
+
+        // Retract the proposal
+        await expect(nftCollateral.connect(borrower).retractProposal(0))
+            .to.emit(nftCollateral, "ProposalRetracted")
+            .withArgs(0);
+    });
+
+    it("should transfer NFT to lender after loan date expiry", async function () {
+        const proposalId = 0;
+        const nftTokenId = 1;
+        const loanAmount = ethers.parseUnits("100", "ether");
+        const interestRate = 10; // 10%
+        const duration = 30 * 24 * 60 * 60; // 30 days
+
+        // Submit a proposal
+        await nftToken.connect(borrower).approve(nftCollateralAddress, nftTokenId);
+        await nftCollateral.connect(borrower).submitProposal(
+            nftContractAddress,
+            nftTokenId,
+            loanAmount,
+            interestRate,
+            duration
+        );
+
+        // Accept the proposal
+        await nftCollateral.connect(lender).acceptProposal(proposalId, { value: loanAmount });
+
+        // Increase time
+        await ethers.provider.send("evm_increaseTime", [duration + 1]);
+        await ethers.provider.send("evm_mine", []);
+
+        // Act on loan date expiry
+        await nftCollateral.connect(col_owner).actOnLoanDateExpiry(proposalId);
+
+        // Verify NFT ownership
+        expect(await nftToken.ownerOf(nftTokenId)).to.equal(lender.address);
+    });
+
+    it("should retrieve a proposal", async function () {
+        const nftTokenId = 1;
+        const loanAmount = ethers.parseUnits("100", "ether");
+        const interestRate = 10; // 10%
+        const duration = 30 * 24 * 60 * 60; // 30 days
+
+        // Submit a proposal
+        await nftToken.connect(borrower).approve(nftCollateralAddress, nftTokenId);
+        await nftCollateral.connect(borrower).submitProposal(
+            nftContractAddress,
+            nftTokenId,
+            loanAmount,
+            interestRate,
+            duration
+        );
+
+        // Retrieve the proposal
+        const proposal = await nftCollateral.getProposal(0);
+
+        // Verify the proposal details
+        expect(proposal.borrower).to.equal(borrower.address);
+        expect(proposal.loanAmount).to.equal(loanAmount);
+        // Add other necessary verifications
+    });
+
+    it("should return the total number of proposals", async function () {
+        const nftTokenId = 1;
+        const loanAmount = ethers.parseUnits("100", "ether");
+        const interestRate = 10; // 10%
+        const duration = 30 * 24 * 60 * 60; // 30 days
+
+        // Submit a proposal
+        await nftToken.connect(borrower).approve(nftCollateralAddress, nftTokenId);
+        await nftCollateral.connect(borrower).submitProposal(
+            nftContractAddress,
+            nftTokenId,
+            loanAmount,
+            interestRate,
+            duration
+        );
+
+        // Get the total number of proposals
+        const totalProposals = await nftCollateral.getTotalProposals();
+
+        // Verify the total number of proposals
+        expect(totalProposals).to.equal(1);
+    });
+
 });
